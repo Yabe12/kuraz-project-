@@ -1,27 +1,50 @@
+require('dotenv').config();
+const TelegramBot = require('node-telegram-bot-api');
 const express = require('express');
 const bodyParser = require('body-parser');
-const fs = require('fs');
+
+const botToken = process.env.STORAGE_BOT_TOKEN;
+const bot = new TelegramBot(botToken, { polling: true });
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware to parse incoming JSON requests
+// In-memory storage for registered students
+let studentData = [];
+
+// Middleware to parse JSON
 app.use(bodyParser.json());
 
-// Route to handle incoming data from the Telegram bot
-app.post('/store', (req, res) => {
-    const userData = req.body;
+// Endpoint to receive and store data from registration bot
+app.post('/store_data', (req, res) => {
+    const data = req.body;
 
-    // Save the userData to a JSON file
-    try {
-        fs.writeFileSync('userData.json', JSON.stringify(userData, null, 2));
-        res.status(200).send('Data received and stored successfully!');
-    } catch (error) {
-        console.error('Error writing data to file:', error);
-        res.status(500).send('Internal Server Error: Could not store data.');
-    }
+    // Store the data in memory
+    studentData.push(data);
+    console.log('Data received:', data);
+
+    // Respond to the registration bot
+    res.status(200).send('Data stored successfully.');
 });
 
-// Start the server
+// Command handler for retrieving data
+bot.onText(/\/get_data/, (msg) => {
+    const chatId = msg.chat.id;
+
+    if (studentData.length === 0) {
+        bot.sendMessage(chatId, 'No data available.');
+        return;
+    }
+
+    // Format and send the stored data
+    let response = 'Stored Data:\n\n';
+    studentData.forEach((data, index) => {
+        response += `Student ${index + 1}:\nName: ${data.name}\nEmail: ${data.email}\nLinkedIn: ${data.linkedin}\nGitHub: ${data.github}\n\n`;
+    });
+
+    bot.sendMessage(chatId, response);
+});
+
+// Start the express server to listen for incoming data
 app.listen(port, () => {
-    console.log(`Storage bot server listening on port ${port}`);
+    console.log(`Storage bot server is running on port ${port}`);
 });
