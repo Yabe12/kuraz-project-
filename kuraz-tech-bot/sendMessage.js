@@ -1,14 +1,16 @@
-const axios = require('axios');
-const botToken = '7529904140:AAGFu9HOBWG37v1K7qWItll9H-CWJWu5LJk'; // Use your bot token here
-const chatId = 'CHAT_ID';
-const message = 'Your message here';
+require('dotenv').config();
+const TelegramBot = require('node-telegram-bot-api');
 
-const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-axios.post(url, {
-  chat_id: chatId,
-  text: message,
-}).then(response => {
-  console.log('Message sent:', response.data);
-}).catch(error => {
-  console.error('Error sending message:', error);
-});
+const botToken = process.env.NEW_INTERNS_BOT_TOKEN; // Replace with your bot token
+const bot = new TelegramBot(botToken, { polling: true });
+
+const channelUsername = '@https://t.me/+QobhBYXu2f9hNTk8'; // Use your channel username with '@'
+const testMessage = 'Test message';
+
+bot.sendMessage(channelUsername, testMessage)
+    .then(() => {
+        console.log('Message sent successfully.');
+    })
+    .catch(error => {
+        console.error('Error sending message:', error);
+    });

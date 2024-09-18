@@ -1,13 +1,12 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
-const axios = require('axios');
 
 const botToken = process.env.NEW_INTERNS_BOT_TOKEN;
-const storageBotUrl = process.env.STORAGE_BOT_URL; // URL to send data to storage bot
+const channelId = process.env.CHANNEL_ID; // Channel ID to send data to
 
 const bot = new TelegramBot(botToken, { polling: true });
 
-// Utility function to validate email
+
 function isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -79,12 +78,15 @@ bot.onText(/Register/, (msg) => {
                                                                     resume: resume.file_id // Save the file_id to fetch later
                                                                 };
 
-                                                                // Send the JSON data to the storage bot
+                                                                // Convert JSON data to a string
+                                                                const userDataString = JSON.stringify(userData, null, 2);
+
+                                                                // Send the JSON data to the private channel
                                                                 try {
-                                                                    await axios.post(storageBotUrl, userData);
+                                                                    await bot.sendMessage(channelId, `New Registration:\n\`\`\`${userDataString}\`\`\``, { parse_mode: 'Markdown' });
                                                                     bot.sendMessage(chatId, 'Registration complete and data stored.');
                                                                 } catch (error) {
-                                                                    console.error('Error sending data to storage bot:', error);
+                                                                    console.error('Error sending data to channel:', error);
                                                                     bot.sendMessage(chatId, 'Error: Could not save your data. Please try again later.');
                                                                 }
 
