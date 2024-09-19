@@ -17,71 +17,9 @@ bot.onText(/\/start/, (msg) => {
     if (chatId == adminId) {
         showAdminMenu(chatId);
     } else {
-        bot.sendMessage(chatId, 'Welcome to Kuraze Internship Bot! Please choose an option:', {
-            reply_markup: {
-                inline_keyboard: [
-                    [{ text: 'Register', callback_data: 'register' }],
-                    [{ text: 'Information', callback_data: 'info' }],
-                    [{ text: 'Education', callback_data: 'education' }],
-                    [{ text: 'Support & Discussion Group', callback_data: 'support' }],
-                    [{ text: 'Direct Contact', callback_data: 'contact' }]
-                ]
-            }
-        });
+        showUserMenu(chatId);
     }
 });
-
-// Listen for callback queries
-bot.on('callback_query', (callbackQuery) => {
-    const chatId = callbackQuery.message.chat.id;
-    const data = callbackQuery.data;
-
-    if (chatId == adminId) {
-        handleAdminCallback(chatId, data);
-    } else {
-        handleUserCallback(chatId, data);
-    }
-});
-
-// Handle user callback queries
-function handleUserCallback(chatId, data) {
-    if (data === 'register') {
-        startRegistration(chatId);
-    } else if (data === 'info') {
-        bot.sendMessage(chatId, 'Here is the official channel link for more information: [Official Channel](https://t.me/kuraztech)', { parse_mode: 'Markdown' });
-    } else if (data === 'education') {
-        bot.sendMessage(chatId, 'Visit our educational website for learning materials: [Educational Website](https://www.kuraztech.com)', { parse_mode: 'Markdown' });
-    } else if (data === 'support') {
-        bot.sendMessage(chatId, 'Join our support & discussion group here: [Support & Discussion Group](https://t.me/kuraztechnologies)', { parse_mode: 'Markdown' });
-    } else if (data === 'contact') {
-        bot.sendMessage(chatId, 'For direct contacts, please reach out to @bkhappy.');
-    }
-}
-
-// Handle admin callback queries
-function handleAdminCallback(chatId, data) {
-    if (data === 'view_students') {
-        viewAllStudents(chatId);
-    } else if (data === 'delete_all') {
-        deleteAllStudents(chatId);
-    }
-}
-
-// Start registration process
-// Show user menu
-function showUserMenu(chatId) {
-    bot.sendMessage(chatId, 'Welcome to Kuraze Internship Bot! Please choose an option:', {
-        reply_markup: {
-            inline_keyboard: [
-                [{ text: 'Register', callback_data: 'register' }],
-                [{ text: 'Information', callback_data: 'info' }],
-                [{ text: 'Education', callback_data: 'education' }],
-                [{ text: 'Support & Discussion Group', callback_data: 'support' }],
-                [{ text: 'Direct Contact', callback_data: 'contact' }]
-            ]
-        }
-    });
-}
 
 // Handle callback queries
 bot.on('callback_query', (callbackQuery) => {
@@ -97,6 +35,21 @@ bot.on('callback_query', (callbackQuery) => {
     // Acknowledge the callback query
     bot.answerCallbackQuery(callbackQuery.id);
 });
+
+// Show user menu
+function showUserMenu(chatId) {
+    bot.sendMessage(chatId, 'Welcome to Kuraze Internship Bot! Please choose an option:', {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: 'Register', callback_data: 'register' }],
+                [{ text: 'Information', callback_data: 'info' }],
+                [{ text: 'Education', callback_data: 'education' }],
+                [{ text: 'Support & Discussion Group', callback_data: 'support' }],
+                [{ text: 'Direct Contact', callback_data: 'contact' }]
+            ]
+        }
+    });
+}
 
 // Handle user callback queries
 function handleUserCallback(chatId, data) {
@@ -173,7 +126,6 @@ function startRegistration(chatId) {
     });
 }
 
-
 // Save registration data as JSON and send to the channel
 function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, justification) {
     const studentData = {
@@ -244,20 +196,6 @@ function deleteAllStudents(chatId) {
     pendingRegistrations = {};
     bot.sendMessage(chatId, 'All student data has been deleted.');
 }
-
-// Handle approval/rejection of students
-bot.on('callback_query', (callbackQuery) => {
-    const chatId = callbackQuery.message.chat.id;
-    const data = callbackQuery.data;
-
-    if (data.startsWith('approve_')) {
-        const studentChatId = data.split('_')[1];
-        approveStudent(studentChatId);
-    } else if (data.startsWith('reject_')) {
-        const studentChatId = data.split('_')[1];
-        rejectStudent(studentChatId);
-    }
-});
 
 // Approve a student
 function approveStudent(studentChatId) {
