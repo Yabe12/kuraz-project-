@@ -30,9 +30,9 @@ bot.on('callback_query', (callbackQuery) => {
     if (data === 'register') {
         startRegistration(chatId);
     } else if (data === 'info') {
-        bot.sendMessage(chatId, 'Here is the official channel link for more information: [Official Channel](https://t.me/kuraztech)', { parse_mode: 'Markdown' });
+        bot.sendMessage(chatId, 'Here is the official channel link for more information: [Official Channel](t.me/kuraztech)', { parse_mode: 'Markdown' });
     } else if (data === 'education') {
-        bot.sendMessage(chatId, 'Visit our educational website for learning materials: [Educational Website](https://www.kuraztech.com)', { parse_mode: 'Markdown' });
+        bot.sendMessage(chatId, 'Visit our educational website for learning materials: [Educational Website](www.kuraztech.com)', { parse_mode: 'Markdown' });
     } else if (data === 'support') {
         bot.sendMessage(chatId, 'Join our support & discussion group here: [Support & Discussion Group](https://t.me/kuraztechnologies)', { parse_mode: 'Markdown' });
     } else if (data === 'contact') {
@@ -40,7 +40,6 @@ bot.on('callback_query', (callbackQuery) => {
     }
 });
 
-// Start registration process
 function startRegistration(chatId) {
     bot.sendMessage(chatId, 'Please provide your full name:');
     bot.once('message', (msg) => {
@@ -61,7 +60,6 @@ function startRegistration(chatId) {
     });
 }
 
-// Save registration data as JSON and send to the channel
 function saveRegistrationData(chatId, fullName, github, linkedin, justification) {
     const studentData = {
         chatId,
@@ -71,19 +69,14 @@ function saveRegistrationData(chatId, fullName, github, linkedin, justification)
         justification
     };
 
-    // Save the data to a JSON file
-    const filename = `registration_${chatId}.json`;
-    fs.writeFileSync(filename, JSON.stringify(studentData, null, 2));
-
-    // Send the file to the admin channel
-    bot.sendDocument(adminChannelId, filename)
-       .then(() => {
-           // Delete the file after sending
-           fs.unlinkSync(filename);
-       })
-       .catch(err => {
-           console.error('Error sending document:', err);
-       });
+    // Send data to the admin channel
+    bot.sendMessage(adminChannelId, `New student registered:\nName: ${fullName}\nGitHub: ${github}\nLinkedIn: ${linkedin}\nJustification: ${justification}`, {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: 'Approve', callback_data: `approve_${chatId}` }]
+            ]
+        }
+    });
 
     bot.sendMessage(chatId, 'Your registration is complete. Thank you!');
 }
