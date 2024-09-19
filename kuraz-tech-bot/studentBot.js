@@ -138,8 +138,7 @@ function startRegistration(chatId) {
         });
     });
 }
-
-// Save registration data as JSON and send to the channel
+// Save registration data and send to the admin channel
 function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, justification) {
     const studentData = {
         chatId,
@@ -152,76 +151,36 @@ function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, e
         justification
     };
 
-    // Save the data to a JSON file
-    const filename = `registration_${chatId}.json`;
-    fs.writeFileSync(filename, JSON.stringify(studentData, null, 2));
+    // Store the registration data temporarily
+    pendingRegistrations[chatId] = studentData;
 
-    // Store the file info for admin review
-    pendingRegistrations[chatId] = filename;
-
-    // Send the file to the admin channel
-    bot.sendDocument(adminChannelId, filename)
-       .then(() => {
-           // Delete the file after sending
-           fs.unlinkSync(filename);
-       })
-       .catch(err => {
-           console.error('Error sending document:', err);
-       });
+    // Send registration data to the admin channel with approve/reject buttons
+    bot.sendMessage(adminChannelId, `New Registration Request:\n\nName: ${fullName}\nGitHub: ${github}\nLinkedIn: ${linkedin}\nPhone: ${phoneNumber}\nEmail: ${email}\nTelegram Username: ${telegramUsername}\nJustification: ${justification}`, {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: 'Approve', callback_data: `approve_${chatId}` }],
+                [{ text: 'Reject', callback_data: `reject_${chatId}` }]
+            ]
+        }
+    });
 
     bot.sendMessage(chatId, 'Your registration is complete. Thank you!');
 }
 
-// Admin menu
-function showAdminMenu(chatId) {
-    bot.sendMessage(chatId, 'Welcome Admin! Please choose an option:', {
-        reply_markup: {
-            inline_keyboard: [
-                [{ text: 'View All Students', callback_data: 'view_students' }],
-                [{ text: 'Delete All Students', callback_data: 'delete_all' }]
-            ]
-        }
-    });
-}
-
-// View all students
-function viewAllStudents(chatId) {
-    let message = 'Here are the pending registrations:\n\n';
-    for (const [studentChatId, filename] of Object.entries(pendingRegistrations)) {
-        const studentData = JSON.parse(fs.readFileSync(filename, 'utf8'));
-        message += `Name: ${studentData.fullName}\nGitHub: ${studentData.github}\nLinkedIn: ${studentData.linkedin}\nJustification: ${studentData.justification}\n\n`;
-        // Add buttons for approve/reject
-        bot.sendMessage(chatId, message, {
-            reply_markup: {
-                inline_keyboard: [
-                    [{ text: 'Approve', callback_data: `approve_${studentChatId}` }],
-                    [{ text: 'Reject', callback_data: `reject_${studentChatId}` }]
-                ]
-            }
-        });
-        // Remove processed student data
-        fs.unlinkSync(filename);
-    }
-}
-
-// Delete all students
-function deleteAllStudents(chatId) {
-    pendingRegistrations = {};
-    bot.sendMessage(chatId, 'All student data has been deleted.');
-}
-
 // Approve a student
 function approveStudent(studentChatId) {
-    const filename = pendingRegistrations[studentChatId];
-    const studentData = JSON.parse(fs.readFileSync(filename, 'utf8'));
-    bot.sendMessage(studentChatId, 'Congratulations! Your registration has been approved.');
-    // Optionally, you can remove the student from the pending list after approval
-    delete pendingRegistrations[studentChatId];
+    const studentData = pendingRegistrations[studentChatId];
+    if (studentData) {
+        bot.sendMessage(studentChatId, 'Congratulations! Your registration has been approved.');
+        delete pendingRegistrations[studentChatId]; // Remove from pending list
+    }
 }
 
 // Reject a student
 function rejectStudent(studentChatId) {
-    bot.sendMessage(studentChatId, 'Sorry, your registration has been rejected.');
-    // Optionally, you can remove the student from the pending list after rejection
-    delete pendingRegistrations[studentChatId];
+    const studentData = pendingRegistrations[studentChatId];
+    if (studentData) {
+        bot.sendMessage(studentChatId, 'Sorry, your registration has been rejected.');
+        delete pendingRegistrations[studentChatId]; // Remove from pending list
+    }
 }
