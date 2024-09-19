@@ -20,13 +20,13 @@
 ## Overview
 Kuraz Tech Bot is a Telegram Bot built using Node.js and the `node-telegram-bot-api` library to streamline the registration process for the Kuraze Internship program. It offers a seamless experience for both users and admins, allowing users to register and admins to manage the registrations effectively.
 ## 📸 Screenshot1
-![Projects Screenshots](./utils/image/2.jpg)
+![Projects Screenshots](./utils/image/a.jpg)
 
 
 
 ## 📸 Screenshot2
 
-![Projects Screenshots](./utils/image/3.jpg)
+![Projects Screenshots](./utils/image/b.jpg)
 
 
 ---
