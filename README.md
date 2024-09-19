@@ -12,7 +12,7 @@
   - [Usage](#usage)
 - [Project Structure](#project-structure)
 - [How It Works](#how-it-works)
-- [Future Improvements](#future-improvements)
+  
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
