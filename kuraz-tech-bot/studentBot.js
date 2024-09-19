@@ -126,7 +126,7 @@ function startRegistration(chatId) {
                         bot.sendMessage(chatId, 'Please provide your Telegram username (e.g., @username):');
                         bot.once('message', (msg) => {
                             const telegramUsername = msg.text;
-                            bot.sendMessage(chatId, 'Please justify why you want the scholarship (e.g., "I want to enhance my coding skills and contribute to open source projects...") :');
+                            bot.sendMessage(chatId, "Please select one of the following areas to continue your development: Frontend, Backend, or Mobile App, e.g., Frontend ");
                             bot.once('message', (msg) => {
                                 const justification = msg.text;
                                 saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, justification);
@@ -164,14 +164,14 @@ function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, e
         }
     });
 
-    bot.sendMessage(chatId, 'Your registration is complete. Thank you!');
+    bot.sendMessage(chatId, '✔️ Your registration is complete! If you are selected for this internship, we will send you a message. Thank you! 🙏🌟');
 }
 
 // Approve a student
 function approveStudent(studentChatId) {
     const studentData = pendingRegistrations[studentChatId];
     if (studentData) {
-        bot.sendMessage(studentChatId, 'Congratulations! Your registration has been approved.');
+        bot.sendMessage(studentChatId, "🎉🎊 Congratulations! 🎊🎉 Your registration has been successfully approved! 🌟✨Our office location is [here](https://maps.app.goo.gl/SjmxFtyEenXJcCE89). We look forward to seeing you! 🏢📍");
         delete pendingRegistrations[studentChatId]; // Remove from pending list
     }
 }
@@ -180,7 +180,7 @@ function approveStudent(studentChatId) {
 function rejectStudent(studentChatId) {
     const studentData = pendingRegistrations[studentChatId];
     if (studentData) {
-        bot.sendMessage(studentChatId, 'Sorry, your registration has been rejected.');
+        bot.sendMessage(studentChatId, '🚫😔 Sorry, your registration has been rejected. 😔🚫');
         delete pendingRegistrations[studentChatId]; // Remove from pending list
     }
 }
