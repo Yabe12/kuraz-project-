@@ -68,6 +68,79 @@ function handleAdminCallback(chatId, data) {
 }
 
 // Start registration process
+// Show user menu
+function showUserMenu(chatId) {
+    bot.sendMessage(chatId, 'Welcome to Kuraze Internship Bot! Please choose an option:', {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: 'Register', callback_data: 'register' }],
+                [{ text: 'Information', callback_data: 'info' }],
+                [{ text: 'Education', callback_data: 'education' }],
+                [{ text: 'Support & Discussion Group', callback_data: 'support' }],
+                [{ text: 'Direct Contact', callback_data: 'contact' }]
+            ]
+        }
+    });
+}
+
+// Handle callback queries
+bot.on('callback_query', (callbackQuery) => {
+    const chatId = callbackQuery.message.chat.id;
+    const data = callbackQuery.data;
+
+    if (chatId == adminId) {
+        handleAdminCallback(chatId, data);
+    } else {
+        handleUserCallback(chatId, data);
+    }
+
+    // Acknowledge the callback query
+    bot.answerCallbackQuery(callbackQuery.id);
+});
+
+// Handle user callback queries
+function handleUserCallback(chatId, data) {
+    switch (data) {
+        case 'register':
+            startRegistration(chatId);
+            break;
+        case 'info':
+            bot.sendMessage(chatId, 'Here is the official channel link for more information: [Official Channel](https://t.me/kuraztech)', { parse_mode: 'Markdown' });
+            break;
+        case 'education':
+            bot.sendMessage(chatId, 'Visit our educational website for learning materials: [Educational Website](https://www.kuraztech.com)', { parse_mode: 'Markdown' });
+            break;
+        case 'support':
+            bot.sendMessage(chatId, 'Join our support & discussion group here: [Support & Discussion Group](https://t.me/kuraztechnologies)', { parse_mode: 'Markdown' });
+            break;
+        case 'contact':
+            bot.sendMessage(chatId, 'For direct contacts, please reach out to @bkhappy.');
+            break;
+    }
+}
+
+// Handle admin callback queries
+function handleAdminCallback(chatId, data) {
+    switch (data) {
+        case 'view_students':
+            viewAllStudents(chatId);
+            break;
+        case 'delete_all':
+            deleteAllStudents(chatId);
+            break;
+        default:
+            if (data.startsWith('approve_')) {
+                const studentChatId = data.split('_')[1];
+                approveStudent(studentChatId);
+            } else if (data.startsWith('reject_')) {
+                const studentChatId = data.split('_')[1];
+                rejectStudent(studentChatId);
+            }
+            break;
+    }
+}
+
+// Start registration process
 function startRegistration(chatId) {
     bot.sendMessage(chatId, 'Please provide your full name:');
     bot.once('message', (msg) => {
@@ -78,23 +151,39 @@ function startRegistration(chatId) {
             bot.sendMessage(chatId, 'Please provide your LinkedIn account:');
             bot.once('message', (msg) => {
                 const linkedin = msg.text;
-                bot.sendMessage(chatId, 'Please justify why you want the scholarship:');
+                bot.sendMessage(chatId, 'Please provide your phone number:');
                 bot.once('message', (msg) => {
-                    const justification = msg.text;
-                    saveRegistrationData(chatId, fullName, github, linkedin, justification);
+                    const phoneNumber = msg.text;
+                    bot.sendMessage(chatId, 'Please provide your email address:');
+                    bot.once('message', (msg) => {
+                        const email = msg.text;
+                        bot.sendMessage(chatId, 'Please provide your Telegram username:');
+                        bot.once('message', (msg) => {
+                            const telegramUsername = msg.text;
+                            bot.sendMessage(chatId, 'Please justify why you want the scholarship:');
+                            bot.once('message', (msg) => {
+                                const justification = msg.text;
+                                saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, justification);
+                            });
+                        });
+                    });
                 });
             });
         });
     });
 }
 
+
 // Save registration data as JSON and send to the channel
-function saveRegistrationData(chatId, fullName, github, linkedin, justification) {
+function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, justification) {
     const studentData = {
         chatId,
         fullName,
         github,
         linkedin,
+        phoneNumber,
+        email,
+        telegramUsername,
         justification
     };
 
