@@ -134,5 +134,6 @@ This project is licensed under the MIT License - see the [LICENSE](../LICENSE.md
 
 ## Contact
 
-For any inquiries or support, please reach out to me at [yeabsirabehailu92@gmail.com](mailto:yeabsirabehailu92@gmail.com).
+For any inquiries or support, please reach out to me at [yeabsirabehailu92@gmail.com](mailto:yeabsirabehailu92@gmail.com) or connect with me on [LinkedIn](https://www.linkedin.com/in/yeabsira-behailu-19504b285/).
+
 
