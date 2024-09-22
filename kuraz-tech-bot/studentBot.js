@@ -149,15 +149,15 @@ function startRegistration(chatId) {
                             bot.sendMessage(chatId, "Please provide your university name:");
                             bot.once('message', (msg) => {
                                 const university = msg.text;
-                                bot.sendMessage(chatId, "Please provide your graduation year:");
+                                bot.sendMessage(chatId, "year(e.g.,2nd):");
                                 bot.once('message', (msg) => {
-                                    const graduationYear = msg.text;
+                                    const Year = msg.text;
                                     bot.sendMessage(chatId, "Please upload your profile picture:");
 
                                     bot.once('photo', (photo) => {
                                         const fileId = photo.photo[photo.photo.length - 1].file_id;
 
-                                        saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, university, graduationYear, fileId);
+                                        saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, university, Year, fileId);
                                     });
                                 });
                             });
@@ -170,7 +170,7 @@ function startRegistration(chatId) {
 }
 
 // Save registration data and send to admin channel
-function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, university, graduationYear, fileId) {
+function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, university, Year, fileId) {
     const studentData = {
         chatId,
         fullName,
@@ -180,7 +180,7 @@ function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, e
         email,
         telegramUsername,
         university,
-        graduationYear,
+        Year,
         fileId
     };
 
@@ -197,7 +197,7 @@ function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, e
 *Email:* ${email}
 *Telegram Username:* ${telegramUsername}
 *University:* ${university}
-*Graduation Year:* ${graduationYear}
+*Year:* ${Year}
 `;
 
     bot.sendPhoto(adminChannelId, fileId, {
