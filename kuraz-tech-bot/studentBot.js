@@ -104,17 +104,11 @@ Please select:
 }
 
 // Handle policy agreement callback
-function handleUserCallback(chatId, data) {
-    switch (data) {
-        case 'agree_policy':
-            startRegistration(chatId);
-            break;
-        case 'disagree_policy':
-            bot.sendMessage(chatId, 'You have declined the policy. Unfortunately, you cannot proceed with the registration without agreeing to the terms.');
-            break;
-        default:
-            handleUserCallback(chatId, data);
-            break;
+function handlePolicyAgreement(chatId, data) {
+    if (data === 'agree_policy') {
+        startRegistration(chatId);
+    } else {
+        bot.sendMessage(chatId, 'You have declined the policy. Unfortunately, you cannot proceed with the registration without agreeing to the terms.');
     }
 }
 
@@ -123,37 +117,45 @@ function startRegistration(chatId) {
     bot.sendMessage(chatId, 'Please provide your full name (e.g., John Doe):');
     bot.once('message', (msg) => {
         const fullName = msg.text;
-        bot.sendMessage(chatId, 'Please provide your GitHub account (e.g., https://github.com/username):');
+        bot.sendMessage(chatId, 'Please provide your university name (e.g., XYZ University):');
         bot.once('message', (msg) => {
-            const github = msg.text;
-            bot.sendMessage(chatId, 'Please provide your LinkedIn account (e.g., https://www.linkedin.com/in/username):');
+            const universityName = msg.text;
+            bot.sendMessage(chatId, 'Please provide your graduation year (e.g., 2024):');
             bot.once('message', (msg) => {
-                const linkedin = msg.text;
-                bot.sendMessage(chatId, 'Please provide your phone number (e.g., 0912345678):');
+                const graduationYear = msg.text;
+                bot.sendMessage(chatId, 'Please provide your GitHub account (e.g., https://github.com/username):');
                 bot.once('message', (msg) => {
-                    const phoneNumber = msg.text;
-
-                    if (!/^09\d{8}$/.test(phoneNumber)) {
-                        bot.sendMessage(chatId, 'Invalid phone number. It must start with 09 and be 10 digits long, e.g., 0912345678.');
-                        return;
-                    }
-
-                    bot.sendMessage(chatId, 'Please provide your email address (e.g., example@domain.com):');
+                    const github = msg.text;
+                    bot.sendMessage(chatId, 'Please provide your LinkedIn account (e.g., https://www.linkedin.com/in/username):');
                     bot.once('message', (msg) => {
-                        const email = msg.text;
-
-                        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-                            bot.sendMessage(chatId, 'Invalid email format. Please provide a valid email address, e.g., example@domain.com.');
-                            return;
-                        }
-
-                        bot.sendMessage(chatId, 'Please provide your Telegram username (e.g., @username):');
+                        const linkedin = msg.text;
+                        bot.sendMessage(chatId, 'Please provide your phone number (e.g., 0912345678):');
                         bot.once('message', (msg) => {
-                            const telegramUsername = msg.text;
-                            bot.sendMessage(chatId, "Please select one of the following areas to continue your development: Frontend, Backend, or Mobile App.");
+                            const phoneNumber = msg.text;
+
+                            if (!/^09\d{8}$/.test(phoneNumber)) {
+                                bot.sendMessage(chatId, 'Invalid phone number. It must start with 09 and be 10 digits long, e.g., 0912345678.');
+                                return;
+                            }
+
+                            bot.sendMessage(chatId, 'Please provide your email address (e.g., example@domain.com):');
                             bot.once('message', (msg) => {
-                                const justification = msg.text;
-                                saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, justification);
+                                const email = msg.text;
+
+                                if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+                                    bot.sendMessage(chatId, 'Invalid email format. Please provide a valid email address, e.g., example@domain.com.');
+                                    return;
+                                }
+
+                                bot.sendMessage(chatId, 'Please provide your Telegram username (e.g., @username):');
+                                bot.once('message', (msg) => {
+                                    const telegramUsername = msg.text;
+                                    bot.sendMessage(chatId, "Please select one of the following areas to continue your development: Frontend, Backend, or Mobile App.");
+                                    bot.once('message', (msg) => {
+                                        const justification = msg.text;
+                                        saveRegistrationData(chatId, fullName, universityName, graduationYear, github, linkedin, phoneNumber, email, telegramUsername, justification);
+                                    });
+                                });
                             });
                         });
                     });
@@ -164,10 +166,12 @@ function startRegistration(chatId) {
 }
 
 // Save registration data and notify admin
-function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, justification) {
+function saveRegistrationData(chatId, fullName, universityName, graduationYear, github, linkedin, phoneNumber, email, telegramUsername, justification) {
     const studentData = {
         chatId,
         fullName,
+        universityName,
+        graduationYear,
         github,
         linkedin,
         phoneNumber,
@@ -181,6 +185,8 @@ function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, e
     // Notify admin about the new registration
     bot.sendMessage(adminChannelId, `New registration request:
         \nName: ${fullName}
+        \nUniversity: ${universityName}
+        \nGraduation Year: ${graduationYear}
         \nGitHub: ${github}
         \nLinkedIn: ${linkedin}
         \nPhone: ${phoneNumber}
@@ -201,7 +207,7 @@ function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, e
 function approveStudent(studentChatId) {
     const studentData = pendingRegistrations[studentChatId];
     if (studentData) {
-        bot.sendMessage(studentChatId, "🎉🎊 Congratulations! 🎊🎉 Your registration has been successfully approved! 🌟✨Our office location is [here](https://maps.app.goo.gl/SjmxFtyEenXJcCE89). We look forward to seeing you! 🏢📍");
+        bot.sendMessage(studentChatId, "🎉🎊 Congratulations! 🎊🎉 Your registration has been successfully approved! 🌟✨ Our office location is [here](https://maps.app.goo.gl/SjmxFtyEenXJcCE89). We look forward to seeing you! 🏢📍");
         delete pendingRegistrations[studentChatId]; // Remove from pending list
     }
 }
@@ -237,4 +243,3 @@ function showAdminMenu(chatId) {
         }
     });
 }
-
