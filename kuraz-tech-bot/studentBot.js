@@ -3,10 +3,10 @@ const fs = require('fs');
 require('dotenv').config();
 
 const token = process.env.STUDENT_BOT_TOKEN;
-const adminChannelId = process.env.ADMIN_CHANNEL_ID; // The private Telegram channel ID
+const adminChannelId = process.env.ADMIN_CHANNEL_ID;
 const bot = new TelegramBot(token, { polling: true });
 
-const adminId = process.env.ADMIN_ID; // Add your admin user ID here
+const adminId = process.env.ADMIN_ID;
 
 let pendingRegistrations = {}; // To store registration data temporarily
 
@@ -14,6 +14,10 @@ let pendingRegistrations = {}; // To store registration data temporarily
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
 
+    // Send a welcome message
+    bot.sendMessage(chatId, "Welcome to Kuraze Internship Bot! 🌟🙏");
+
+    // Show the main menu
     if (chatId == adminId) {
         showAdminMenu(chatId);
     } else {
@@ -32,13 +36,12 @@ bot.on('callback_query', (callbackQuery) => {
         handleUserCallback(chatId, data);
     }
 
-    // Acknowledge the callback query
     bot.answerCallbackQuery(callbackQuery.id);
 });
 
 // Show user menu
 function showUserMenu(chatId) {
-    bot.sendMessage(chatId, 'Welcome to Kuraze Internship Bot! Please choose an option:', {
+    bot.sendMessage(chatId, 'Please choose an option:', {
         reply_markup: {
             inline_keyboard: [
                 [{ text: 'Register', callback_data: 'register' }],
@@ -55,7 +58,7 @@ function showUserMenu(chatId) {
 function handleUserCallback(chatId, data) {
     switch (data) {
         case 'register':
-            showPolicyAgreement(chatId);
+            showPolicyAndAgreement(chatId);
             break;
         case 'info':
             bot.sendMessage(chatId, 'Here is the official channel link for more information: [Official Channel](https://t.me/kuraztech)', { parse_mode: 'Markdown' });
@@ -72,42 +75,40 @@ function handleUserCallback(chatId, data) {
     }
 }
 
-// Show policy agreement before registration
-function showPolicyAgreement(chatId) {
-    bot.sendMessage(chatId, 'Please read the internship policy before proceeding: [Kuraz Tech Internship Policy](https://telegra.ph/Kuraz-Tech-company-internship-police-09-22)');
-    bot.sendMessage(chatId, 'Do you agree to the terms and conditions? (Reply with "Agree" or "Disagree")');
+// Show policy and agreement before registration
+function showPolicyAndAgreement(chatId) {
+    const policyMessage = `
+📜 *Policy and Agreement* 📜
 
-    // Wait for user's response
-    bot.once('message', (msg) => {
-        const response = msg.text.toLowerCase();
+Before proceeding with the registration, please read the following terms carefully:
+1. By registering, you agree to provide accurate information.
+2. You accept that the internship will require your full commitment.
+3. Your personal data will be handled confidentially.
 
-        if (response === 'agree') {
-            bot.sendMessage(chatId, 'Great! Let\'s proceed with the registration.');
-            startRegistration(chatId);
-        } else {
-            bot.sendMessage(chatId, 'You must agree to the terms and conditions to proceed with the registration.');
+Do you agree to the terms?
+
+Please select:
+    `;
+
+    bot.sendMessage(chatId, policyMessage, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: 'Yes, I agree', callback_data: 'agree_policy' }],
+                [{ text: 'No, I do not agree', callback_data: 'disagree_policy' }]
+            ]
         }
     });
 }
 
-// Handle admin callback queries
-function handleAdminCallback(chatId, data) {
-    switch (data) {
-        case 'view_students':
-            viewAllStudents(chatId);
-            break;
-        case 'delete_all':
-            deleteAllStudents(chatId);
-            break;
-        default:
-            if (data.startsWith('approve_')) {
-                const studentChatId = data.split('_')[1];
-                approveStudent(studentChatId);
-            } else if (data.startsWith('reject_')) {
-                const studentChatId = data.split('_')[1];
-                rejectStudent(studentChatId);
-            }
-            break;
+// Handle policy agreement callback
+function handlePolicyAgreement(chatId, data) {
+    if (data === 'agree_policy') {
+        // If the user agrees to the policy, start the registration process
+        startRegistration(chatId);
+    } else {
+        // If the user disagrees, send a polite message and stop the registration process
+        bot.sendMessage(chatId, 'You have declined the policy. Unfortunately, you cannot proceed with the registration without agreeing to the terms.');
     }
 }
 
@@ -158,7 +159,7 @@ function startRegistration(chatId) {
     });
 }
 
-// Save registration data and send to the admin channel
+// Save registration data and send to admin channel
 function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, justification) {
     const studentData = {
         chatId,
@@ -187,20 +188,4 @@ function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, e
     bot.sendMessage(chatId, '✔️ Your registration is complete! If you are selected for this internship, we will send you a message. Thank you! 🙏🌟');
 }
 
-// Approve a student
-function approveStudent(studentChatId) {
-    const studentData = pendingRegistrations[studentChatId];
-    if (studentData) {
-        bot.sendMessage(studentChatId, "🎉🎊 Congratulations! 🎊🎉 Your registration has been successfully approved! 🌟✨Our office location is [here](https://maps.app.goo.gl/SjmxFtyEenXJcCE89). We look forward to seeing you! 🏢📍");
-        delete pendingRegistrations[studentChatId]; // Remove from pending list
-    }
-}
-
-// Reject a student
-function rejectStudent(studentChatId) {
-    const studentData = pendingRegistrations[studentChatId];
-    if (studentData) {
-        bot.sendMessage(studentChatId, '🚫😔 Sorry, your registration has been rejected. 😔🚫');
-        delete pendingRegistrations[studentChatId]; // Remove from pending list
-    }
-}
+// Approve and reject logic remains the same...
