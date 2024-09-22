@@ -3,10 +3,10 @@ const fs = require('fs');
 require('dotenv').config();
 
 const token = process.env.STUDENT_BOT_TOKEN;
-const adminChannelId = process.env.ADMIN_CHANNEL_ID; // The private Telegram channel ID
+const adminChannelId = process.env.ADMIN_CHANNEL_ID;
 const bot = new TelegramBot(token, { polling: true });
 
-const adminId = process.env.ADMIN_ID; // Add your admin user ID here
+const adminId = process.env.ADMIN_ID;
 
 let pendingRegistrations = {}; // To store registration data temporarily
 
@@ -14,6 +14,10 @@ let pendingRegistrations = {}; // To store registration data temporarily
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
 
+    // Send a welcome message
+    bot.sendMessage(chatId, "Welcome to Kuraze Internship Bot! 🌟🙏");
+
+    // Show the main menu
     if (chatId == adminId) {
         showAdminMenu(chatId);
     } else {
@@ -32,13 +36,12 @@ bot.on('callback_query', (callbackQuery) => {
         handleUserCallback(chatId, data);
     }
 
-    // Acknowledge the callback query
     bot.answerCallbackQuery(callbackQuery.id);
 });
 
 // Show user menu
 function showUserMenu(chatId) {
-    bot.sendMessage(chatId, 'Welcome to Kuraze Internship Bot! Please choose an option:', {
+    bot.sendMessage(chatId, 'Please choose an option:', {
         reply_markup: {
             inline_keyboard: [
                 [{ text: 'Register', callback_data: 'register' }],
@@ -55,7 +58,7 @@ function showUserMenu(chatId) {
 function handleUserCallback(chatId, data) {
     switch (data) {
         case 'register':
-            startRegistration(chatId);
+            showPolicyAndAgreement(chatId);
             break;
         case 'info':
             bot.sendMessage(chatId, 'Here is the official channel link for more information: [Official Channel](https://t.me/kuraztech)', { parse_mode: 'Markdown' });
@@ -72,26 +75,43 @@ function handleUserCallback(chatId, data) {
     }
 }
 
-// Handle admin callback queries
-function handleAdminCallback(chatId, data) {
-    switch (data) {
-        case 'view_students':
-            viewAllStudents(chatId);
-            break;
-        case 'delete_all':
-            deleteAllStudents(chatId);
-            break;
-        default:
-            if (data.startsWith('approve_')) {
-                const studentChatId = data.split('_')[1];
-                approveStudent(studentChatId);
-            } else if (data.startsWith('reject_')) {
-                const studentChatId = data.split('_')[1];
-                rejectStudent(studentChatId);
-            }
-            break;
-    }
+// Show policy and agreement before registration
+function showPolicyAndAgreement(chatId) {
+    const policyMessage = `
+📜 *Policy and Agreement* 📜
+
+Before proceeding with the registration, please read the following terms carefully:
+1. By registering, you agree to provide accurate information.
+2. You accept that the internship will require your full commitment.
+3. Your personal data will be handled confidentially.
+
+Read the full policy here: [Kuraz Tech Internship Policy](https://telegra.ph/Kuraz-Tech-company-internship-police-09-22)
+
+Do you agree to the terms?`;
+
+    bot.sendMessage(chatId, policyMessage, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: 'Yes, I agree', callback_data: 'agree_policy' }],
+                [{ text: 'No, I do not agree', callback_data: 'disagree_policy' }]
+            ]
+        }
+    });
 }
+
+// Handle policy agreement callback
+bot.on('callback_query', (callbackQuery) => {
+    const chatId = callbackQuery.message.chat.id;
+    const data = callbackQuery.data;
+
+    if (data === 'agree_policy') {
+        startRegistration(chatId);
+    } else if (data === 'disagree_policy') {
+        bot.sendMessage(chatId, 'You have declined the policy. Unfortunately, you cannot proceed with the registration without agreeing to the terms.');
+    }
+});
+
 // Start registration process
 function startRegistration(chatId) {
     bot.sendMessage(chatId, 'Please provide your full name (e.g., John Doe):');
@@ -126,10 +146,20 @@ function startRegistration(chatId) {
                         bot.sendMessage(chatId, 'Please provide your Telegram username (e.g., @username):');
                         bot.once('message', (msg) => {
                             const telegramUsername = msg.text;
-                            bot.sendMessage(chatId, "Please select one of the following areas to continue your development: Frontend, Backend, or Mobile App, e.g., Frontend ");
+                            bot.sendMessage(chatId, "Please provide your university name:");
                             bot.once('message', (msg) => {
-                                const justification = msg.text;
-                                saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, justification);
+                                const university = msg.text;
+                                bot.sendMessage(chatId, "Please provide your graduation year:");
+                                bot.once('message', (msg) => {
+                                    const graduationYear = msg.text;
+                                    bot.sendMessage(chatId, "Please upload your profile picture:");
+
+                                    bot.once('photo', (photo) => {
+                                        const fileId = photo.photo[photo.photo.length - 1].file_id;
+
+                                        saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, university, graduationYear, fileId);
+                                    });
+                                });
                             });
                         });
                     });
@@ -138,8 +168,9 @@ function startRegistration(chatId) {
         });
     });
 }
-// Save registration data and send to the admin channel
-function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, justification) {
+
+// Save registration data and send to admin channel
+function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, university, graduationYear, fileId) {
     const studentData = {
         chatId,
         fullName,
@@ -148,14 +179,30 @@ function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, e
         phoneNumber,
         email,
         telegramUsername,
-        justification
+        university,
+        graduationYear,
+        fileId
     };
 
     // Store the registration data temporarily
     pendingRegistrations[chatId] = studentData;
 
-    // Send registration data to the admin channel with approve/reject buttons
-    bot.sendMessage(adminChannelId, `New Registration Request:\n\nName: ${fullName}\nGitHub: ${github}\nLinkedIn: ${linkedin}\nPhone: ${phoneNumber}\nEmail: ${email}\nTelegram Username: ${telegramUsername}\nJustification: ${justification}`, {
+    // Send registration data to the admin channel with a beautiful arrangement
+    const registrationMessage = `
+*New Registration Request:*
+*Name:* ${fullName}
+*GitHub:* ${github}
+*LinkedIn:* ${linkedin}
+*Phone:* ${phoneNumber}
+*Email:* ${email}
+*Telegram Username:* ${telegramUsername}
+*University:* ${university}
+*Graduation Year:* ${graduationYear}
+`;
+
+    bot.sendPhoto(adminChannelId, fileId, {
+        caption: registrationMessage,
+        parse_mode: 'Markdown',
         reply_markup: {
             inline_keyboard: [
                 [{ text: 'Approve', callback_data: `approve_${chatId}` }],
@@ -171,16 +218,44 @@ function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, e
 function approveStudent(studentChatId) {
     const studentData = pendingRegistrations[studentChatId];
     if (studentData) {
-        bot.sendMessage(studentChatId, "🎉🎊 Congratulations! 🎊🎉 Your registration has been successfully approved! 🌟✨Our office location is [here](https://maps.app.goo.gl/SjmxFtyEenXJcCE89). We look forward to seeing you! 🏢📍");
+        bot.sendMessage(studentChatId, "🎉🎊 Congratulations! 🎊🎉 Your registration has been successfully approved! 🌟✨ Our office location is [here](https://maps.app.goo.gl/SjmxFtyEenXJcCE89). We look forward to seeing you! 🏢📍");
         delete pendingRegistrations[studentChatId]; // Remove from pending list
     }
 }
 
-// Reject a student
+// Reject a student registration
 function rejectStudent(studentChatId) {
     const studentData = pendingRegistrations[studentChatId];
     if (studentData) {
+        // Send rejection message to the user
         bot.sendMessage(studentChatId, '🚫😔 Sorry, your registration has been rejected. 😔🚫');
-        delete pendingRegistrations[studentChatId]; // Remove from pending list
+        
+        // Delete the student data from pending registrations
+        delete pendingRegistrations[studentChatId];
+
+        // Optionally, inform the admin that the rejection has been processed
+        bot.sendMessage(adminId, `The registration for ${studentData.fullName} has been rejected and removed from pending registrations.`);
     }
+}
+
+// Handle admin callback queries
+function handleAdminCallback(chatId, data) {
+    const [action, studentChatId] = data.split('_');
+
+    if (action === 'approve') {
+        approveStudent(studentChatId);
+    } else if (action === 'reject') {
+        rejectStudent(studentChatId);
+    }
+}
+
+// Show admin menu
+function showAdminMenu(chatId) {
+    bot.sendMessage(chatId, 'Admin Menu: Please choose an option:', {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: 'View Pending Registrations', callback_data: 'view_pending' }]
+            ]
+        }
+    });
 }
