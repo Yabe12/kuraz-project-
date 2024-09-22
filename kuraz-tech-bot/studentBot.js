@@ -76,6 +76,7 @@ function handleUserCallback(chatId, data) {
 }
 
 // Show policy and agreement before registration
+// Show policy and agreement before registration
 function showPolicyAndAgreement(chatId) {
     const policyMessage = `
 📜 *Policy and Agreement* 📜
@@ -84,6 +85,8 @@ Before proceeding with the registration, please read the following terms careful
 1. By registering, you agree to provide accurate information.
 2. You accept that the internship will require your full commitment.
 3. Your personal data will be handled confidentially.
+
+Read the full policy here: [Kuraz Tech Internship Policy](https://telegra.ph/Kuraz-Tech-company-internship-police-09-22)
 
 Do you agree to the terms?
 
@@ -100,6 +103,7 @@ Please select:
         }
     });
 }
+
 
 // Handle policy agreement callback
 function handlePolicyAgreement(chatId, data) {
