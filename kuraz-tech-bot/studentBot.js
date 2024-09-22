@@ -77,8 +77,7 @@ function handleUserCallback(chatId, data) {
 
 // Show policy and agreement before registration
 function showPolicyAndAgreement(chatId) {
-    const policyMessage = `
-📜 *Policy and Agreement* 📜
+    const policyMessage = `📜 *Policy and Agreement* 📜
 
 Before proceeding with the registration, please read the following terms carefully:
 1. By registering, you agree to provide accurate information.
@@ -149,15 +148,24 @@ function startRegistration(chatId) {
                             bot.sendMessage(chatId, "Please provide your university name:");
                             bot.once('message', (msg) => {
                                 const university = msg.text;
-                                bot.sendMessage(chatId, "year(e.g.,2nd):");
-                                bot.once('message', (msg) => {
-                                    const Year = msg.text;
+                                bot.sendMessage(chatId, "What area do you want to work in?", {
+                                    reply_markup: {
+                                        inline_keyboard: [
+                                            [{ text: 'Backend', callback_data: 'area_backend' }],
+                                            [{ text: 'Frontend', callback_data: 'area_frontend' }],
+                                            [{ text: 'Mobile', callback_data: 'area_mobile' }]
+                                        ]
+                                    }
+                                });
+
+                                bot.once('callback_query', (callbackQuery) => {
+                                    const area = callbackQuery.data.split('_')[1];
                                     bot.sendMessage(chatId, "Please upload your profile picture:");
 
                                     bot.once('photo', (photo) => {
                                         const fileId = photo.photo[photo.photo.length - 1].file_id;
 
-                                        saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, university, Year, fileId);
+                                        saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, university, area, fileId);
                                     });
                                 });
                             });
@@ -170,7 +178,7 @@ function startRegistration(chatId) {
 }
 
 // Save registration data and send to admin channel
-function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, university, Year, fileId) {
+function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, university, area, fileId) {
     const studentData = {
         chatId,
         fullName,
@@ -180,7 +188,7 @@ function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, e
         email,
         telegramUsername,
         university,
-        Year,
+        area, // Store the selected area
         fileId
     };
 
@@ -188,8 +196,7 @@ function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, e
     pendingRegistrations[chatId] = studentData;
 
     // Send registration data to the admin channel with a beautiful arrangement
-    const registrationMessage = `
-*New Registration Request:*
+    const registrationMessage = `*New Registration Request:*
 *Name:* ${fullName}
 *GitHub:* ${github}
 *LinkedIn:* ${linkedin}
@@ -197,8 +204,7 @@ function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, e
 *Email:* ${email}
 *Telegram Username:* ${telegramUsername}
 *University:* ${university}
-*Year:* ${Year}
-`;
+*Area of Interest:* ${area}`;
 
     bot.sendPhoto(adminChannelId, fileId, {
         caption: registrationMessage,
@@ -233,29 +239,32 @@ function rejectStudent(studentChatId) {
         // Delete the student data from pending registrations
         delete pendingRegistrations[studentChatId];
 
-        // Optionally, inform the admin that the rejection has been processed
-        bot.sendMessage(adminId, `The registration for ${studentData.fullName} has been rejected and removed from pending registrations.`);
-    }
-}
-
-// Handle admin callback queries
-function handleAdminCallback(chatId, data) {
-    const [action, studentChatId] = data.split('_');
-
-    if (action === 'approve') {
-        approveStudent(studentChatId);
-    } else if (action === 'reject') {
-        rejectStudent(studentChatId);
+        // Optionally, inform the admin that the rejection has been completed
+        bot.sendMessage(adminId, `The registration of ${studentData.fullName} has been rejected.`);
     }
 }
 
 // Show admin menu
 function showAdminMenu(chatId) {
-    bot.sendMessage(chatId, 'Admin Menu: Please choose an option:', {
+    bot.sendMessage(chatId, 'Welcome Admin! Please choose an option:', {
         reply_markup: {
             inline_keyboard: [
                 [{ text: 'View Pending Registrations', callback_data: 'view_pending' }]
             ]
         }
     });
+}
+
+// Handle admin callback queries
+function handleAdminCallback(chatId, data) {
+    if (data === 'view_pending') {
+        const registrations = Object.values(pendingRegistrations).map(data => `Name: ${data.fullName}, Phone: ${data.phoneNumber}`).join('\n');
+        bot.sendMessage(chatId, `*Pending Registrations:*\n${registrations || 'No pending registrations.'}`, { parse_mode: 'Markdown' });
+    } else if (data.startsWith('approve_')) {
+        const studentChatId = data.split('_')[1];
+        approveStudent(studentChatId);
+    } else if (data.startsWith('reject_')) {
+        const studentChatId = data.split('_')[1];
+        rejectStudent(studentChatId);
+    }
 }
