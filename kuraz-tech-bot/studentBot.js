@@ -17,7 +17,7 @@ bot.onText(/\/start/, (msg) => {
     // Send a welcome message
     bot.sendMessage(chatId, "Welcome to Kuraze Internship Bot! 🌟🙏");
 
-    // Show the main menu
+    // Show the main menu based on user role
     if (chatId == adminId) {
         showAdminMenu(chatId);
     } else {
@@ -76,7 +76,6 @@ function handleUserCallback(chatId, data) {
 }
 
 // Show policy and agreement before registration
-// Show policy and agreement before registration
 function showPolicyAndAgreement(chatId) {
     const policyMessage = `
 📜 *Policy and Agreement* 📜
@@ -104,19 +103,22 @@ Please select:
     });
 }
 
-
 // Handle policy agreement callback
-function handlePolicyAgreement(chatId, data) {
-    if (data === 'agree_policy') {
-        // If the user agrees to the policy, start the registration process
-        startRegistration(chatId);
-    } else {
-        // If the user disagrees, send a polite message and stop the registration process
-        bot.sendMessage(chatId, 'You have declined the policy. Unfortunately, you cannot proceed with the registration without agreeing to the terms.');
+function handleUserCallback(chatId, data) {
+    switch (data) {
+        case 'agree_policy':
+            startRegistration(chatId);
+            break;
+        case 'disagree_policy':
+            bot.sendMessage(chatId, 'You have declined the policy. Unfortunately, you cannot proceed with the registration without agreeing to the terms.');
+            break;
+        default:
+            handleUserCallback(chatId, data);
+            break;
     }
 }
 
-// Start registration process
+// Start the registration process
 function startRegistration(chatId) {
     bot.sendMessage(chatId, 'Please provide your full name (e.g., John Doe):');
     bot.once('message', (msg) => {
@@ -131,7 +133,6 @@ function startRegistration(chatId) {
                 bot.once('message', (msg) => {
                     const phoneNumber = msg.text;
 
-                    // Phone number validation
                     if (!/^09\d{8}$/.test(phoneNumber)) {
                         bot.sendMessage(chatId, 'Invalid phone number. It must start with 09 and be 10 digits long, e.g., 0912345678.');
                         return;
@@ -141,7 +142,6 @@ function startRegistration(chatId) {
                     bot.once('message', (msg) => {
                         const email = msg.text;
 
-                        // Email validation
                         if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
                             bot.sendMessage(chatId, 'Invalid email format. Please provide a valid email address, e.g., example@domain.com.');
                             return;
@@ -150,7 +150,7 @@ function startRegistration(chatId) {
                         bot.sendMessage(chatId, 'Please provide your Telegram username (e.g., @username):');
                         bot.once('message', (msg) => {
                             const telegramUsername = msg.text;
-                            bot.sendMessage(chatId, "Please select one of the following areas to continue your development: Frontend, Backend, or Mobile App, e.g., Frontend ");
+                            bot.sendMessage(chatId, "Please select one of the following areas to continue your development: Frontend, Backend, or Mobile App.");
                             bot.once('message', (msg) => {
                                 const justification = msg.text;
                                 saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, justification);
@@ -163,7 +163,7 @@ function startRegistration(chatId) {
     });
 }
 
-// Save registration data and send to admin channel
+// Save registration data and notify admin
 function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, email, telegramUsername, justification) {
     const studentData = {
         chatId,
@@ -176,11 +176,18 @@ function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, e
         justification
     };
 
-    // Store the registration data temporarily
     pendingRegistrations[chatId] = studentData;
 
-    // Send registration data to the admin channel with approve/reject buttons
-    bot.sendMessage(adminChannelId, `New Registration Request:\n\nName: ${fullName}\nGitHub: ${github}\nLinkedIn: ${linkedin}\nPhone: ${phoneNumber}\nEmail: ${email}\nTelegram Username: ${telegramUsername}\nJustification: ${justification}`, {
+    // Notify admin about the new registration
+    bot.sendMessage(adminChannelId, `New registration request:
+        \nName: ${fullName}
+        \nGitHub: ${github}
+        \nLinkedIn: ${linkedin}
+        \nPhone: ${phoneNumber}
+        \nEmail: ${email}
+        \nTelegram: ${telegramUsername}
+        \nJustification: ${justification}
+        \nApprove or Reject?`, {
         reply_markup: {
             inline_keyboard: [
                 [{ text: 'Approve', callback_data: `approve_${chatId}` }],
@@ -188,8 +195,46 @@ function saveRegistrationData(chatId, fullName, github, linkedin, phoneNumber, e
             ]
         }
     });
-
-    bot.sendMessage(chatId, '✔️ Your registration is complete! If you are selected for this internship, we will send you a message. Thank you! 🙏🌟');
 }
 
-// Approve and reject logic remains the same...
+// Approve a student registration
+function approveStudent(studentChatId) {
+    const studentData = pendingRegistrations[studentChatId];
+    if (studentData) {
+        bot.sendMessage(studentChatId, "🎉🎊 Congratulations! 🎊🎉 Your registration has been successfully approved! 🌟✨Our office location is [here](https://maps.app.goo.gl/SjmxFtyEenXJcCE89). We look forward to seeing you! 🏢📍");
+        delete pendingRegistrations[studentChatId]; // Remove from pending list
+    }
+}
+
+// Reject a student registration
+function rejectStudent(studentChatId) {
+    const studentData = pendingRegistrations[studentChatId];
+    if (studentData) {
+        bot.sendMessage(studentChatId, '🚫😔 Sorry, your registration has been rejected. 😔🚫');
+        delete pendingRegistrations[studentChatId]; // Remove from pending list
+    }
+}
+
+// Handle admin callback for approving or rejecting
+function handleAdminCallback(chatId, data) {
+    if (data.startsWith('approve_')) {
+        const studentChatId = data.split('_')[1];
+        approveStudent(studentChatId);
+    } else if (data.startsWith('reject_')) {
+        const studentChatId = data.split('_')[1];
+        rejectStudent(studentChatId);
+    }
+}
+
+// Show admin menu
+function showAdminMenu(chatId) {
+    bot.sendMessage(chatId, 'Welcome, Admin! Here is your menu:', {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: 'View Pending Registrations', callback_data: 'view_pending' }],
+                // Add more admin functionalities here
+            ]
+        }
+    });
+}
+
