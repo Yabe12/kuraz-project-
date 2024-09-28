@@ -22,8 +22,11 @@ Kuraz Tech Bot is a Telegram Bot built using Node.js and the `node-telegram-bot-
 ## 📸 User Registration look like 
 ![Projects Screenshots](./utils/image/a.png)
 ![Projects Screenshots](./utils/image/b.png)
+## 📸 student before Registration 
 ![Projects Screenshots](./utils/image/c.jpg)
+## 📸 when student get approval
 ![Projects Screenshots](./utils/image/d.png)
+## 📸 the other information display like this 
 ![Projects Screenshots](./utils/image/e.png)
 
 
